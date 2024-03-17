@@ -8,6 +8,9 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class HttpParserTest {
@@ -21,10 +24,67 @@ class HttpParserTest {
 
     @Test
     void parseHttpRequestTest() {
-        httpParser.parseHttpRequest(generateValidTestCase());
+        HttpRequest request = null;
+        try {
+            request = httpParser.parseHttpRequest(generateValidGETTestCase());
+        } catch (HttpParsingException e) {
+            fail(e);
+        }
+
+        assertEquals(request.getMethod(), HttpMethod.GET);
     }
 
-    private InputStream generateValidTestCase() {
+    @Test
+    void parseBadHttpRequestBadMethodOneTest() {
+        try {
+            HttpRequest request = httpParser.parseHttpRequest(generateBadMethodName1());
+            fail();
+        } catch (HttpParsingException e) {
+            assertEquals(e.getErrorCode(), HttpStatusCode.SERVER_ERROR_501_METHOD_NOT_IMPLEMENTED);
+        }
+    }
+
+    @Test
+    void parseBadHttpRequestBadMethodTwoTest() {
+        try {
+            HttpRequest request = httpParser.parseHttpRequest(generateBadMethodName2());
+            fail();
+        } catch (HttpParsingException e) {
+            assertEquals(e.getErrorCode(), HttpStatusCode.SERVER_ERROR_501_METHOD_NOT_IMPLEMENTED);
+        }
+    }
+
+    @Test
+    void parseBadHttpRequestBadMethodThreeTest() {
+        try {
+            HttpRequest request = httpParser.parseHttpRequest(generateBadMethodName3());
+            fail();
+        } catch (HttpParsingException e) {
+            assertEquals(e.getErrorCode(), HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+        }
+    }
+
+    @Test
+    void parseBadHttpRequestBadMethodForthTest() {
+        try {
+            HttpRequest request = httpParser.parseHttpRequest(generateBadMethodName4());
+            fail();
+        } catch (HttpParsingException e) {
+            assertEquals(e.getErrorCode(), HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+        }
+    }
+
+    @Test
+    void parseBadHttpRequestBadMethodFifthTest() {
+        try {
+            HttpRequest request = httpParser.parseHttpRequest(generateBadMethodName5());
+            fail();
+        } catch (HttpParsingException e) {
+            assertEquals(e.getErrorCode(), HttpStatusCode.CLIENT_ERROR_400_BAD_REQUEST);
+        }
+    }
+
+    private InputStream generateValidGETTestCase() {
         String rawData = "GET / HTTP/1.1\r\n" +
                 "Host: localhost:8080\r\n" +
                 "Connection: keep-alive\r\n" +
@@ -41,6 +101,56 @@ class HttpParserTest {
                 "Sec-Fetch-User: ?1\r\n" +
                 "Sec-Fetch-Dest: document\r\n" +
                 "Accept-Encoding: gzip, deflate, br, zstd\r\n" +
+                "Accept-Language: en-US,en;q=0.9,ru;q=0.8\r\n";
+
+        return new ByteArrayInputStream(
+                rawData.getBytes(StandardCharsets.US_ASCII)
+        );
+    }
+
+    private InputStream generateBadMethodName1() {
+        String rawData = "GeT / HTTP/1.1\r\n" +
+                "Host: localhost:8080\r\n" +
+                "Accept-Language: en-US,en;q=0.9,ru;q=0.8\r\n";
+
+        return new ByteArrayInputStream(
+                rawData.getBytes(StandardCharsets.US_ASCII)
+        );
+    }
+
+    private InputStream generateBadMethodName2() {
+        String rawData = "GETTTT / HTTP/1.1\r\n" +
+                "Host: localhost:8080\r\n" +
+                "Accept-Language: en-US,en;q=0.9,ru;q=0.8\r\n";
+
+        return new ByteArrayInputStream(
+                rawData.getBytes(StandardCharsets.US_ASCII)
+        );
+    }
+
+    private InputStream generateBadMethodName3() {
+        String rawData = "GET / HELLOWORLD HTTP/1.1\r\n" +
+                "Host: localhost:8080\r\n" +
+                "Accept-Language: en-US,en;q=0.9,ru;q=0.8\r\n";
+
+        return new ByteArrayInputStream(
+                rawData.getBytes(StandardCharsets.US_ASCII)
+        );
+    }
+
+    private InputStream generateBadMethodName4() {
+        String rawData = "\r\n" +
+                "Host: localhost:8080\r\n" +
+                "Accept-Language: en-US,en;q=0.9,ru;q=0.8\r\n";
+
+        return new ByteArrayInputStream(
+                rawData.getBytes(StandardCharsets.US_ASCII)
+        );
+    }
+
+    private InputStream generateBadMethodName5() {
+        String rawData = "GET / HTTP/1.1\r" + // <= No LF
+                "Host: localhost:8080\r\n" +
                 "Accept-Language: en-US,en;q=0.9,ru;q=0.8\r\n";
 
         return new ByteArrayInputStream(
